@@ -1,32 +1,39 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Camera, Search } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { UserRecordForm } from "./UserRecordForm";
+import { UserRecordForm, type UserRecordFormData } from "./UserRecordForm";
+import { createUserFromRecord, removeAuthUser } from "../../lib/auth";
 
 export interface UserRecord {
   id: string;
+  firstName: string;
+  lastName: string;
   position: string;
   assignedPhone: string;
   deviceModel: string;
   deviceNumber: string;
-  serialNumber: string;
+  serialNumber1: string;
+  serialNumber2: string;
   photo?: string;
   entryDate: string;
-  name: string;
   username: string;
   password: string;
   role: "Administrador" | "Supervisor" | "Agente" | "Suspendido";
 }
 
+type UserRecordInput = Omit<UserRecord, "id">;
+
 const mockRecords: UserRecord[] = [
   {
     id: "1",
-    name: "María González",
+    firstName: "María",
+    lastName: "González",
     position: "Ejecutivo de Ventas",
     assignedPhone: "+52 55 1234 5678",
     deviceModel: "iPhone 14 Pro",
     deviceNumber: "5512345678",
-    serialNumber: "F2KXH9MNPQ3L",
+    serialNumber1: "F2KXH9MNPQ3L",
+    serialNumber2: "",
     entryDate: "2024-01-15",
     username: "mgonzalez",
     password: "Pass@2026",
@@ -34,12 +41,14 @@ const mockRecords: UserRecord[] = [
   },
   {
     id: "2",
-    name: "Juan Pérez",
+    firstName: "Juan",
+    lastName: "Pérez",
     position: "Gerente de Zona",
     assignedPhone: "+52 55 8765 4321",
     deviceModel: "Samsung Galaxy S23",
     deviceNumber: "5587654321",
-    serialNumber: "R58NVKDM9X2P",
+    serialNumber1: "R58NVKDM9X2P",
+    serialNumber2: "",
     entryDate: "2023-08-22",
     username: "jperez",
     password: "Pass@2026",
@@ -47,12 +56,14 @@ const mockRecords: UserRecord[] = [
   },
   {
     id: "3",
-    name: "Ana Martínez",
+    firstName: "Ana",
+    lastName: "Martínez",
     position: "Soporte Técnico",
     assignedPhone: "+52 55 2468 1357",
     deviceModel: "iPhone 13",
     deviceNumber: "5524681357",
-    serialNumber: "C3WYH7TLPK9M",
+    serialNumber1: "C3WYH7TLPK9M",
+    serialNumber2: "",
     entryDate: "2024-03-10",
     username: "amartinez",
     password: "Pass@2026",
@@ -66,26 +77,41 @@ export function UserRecordManagement() {
   const [editingRecord, setEditingRecord] = useState<UserRecord | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const handleAddRecord = (record: Omit<UserRecord, "id">) => {
-    const newRecord = {
+  const handleAddRecord = (record: UserRecordInput) => {
+    const { username, password } = createUserFromRecord(record);
+    const newRecord: UserRecord = {
       ...record,
       id: String(Date.now()),
+      username,
+      password,
     };
     setRecords((prev) => [...prev, newRecord]);
     setIsFormOpen(false);
   };
 
-  const handleEditRecord = (record: Omit<UserRecord, "id">) => {
+  const handleEditRecord = (record: UserRecordInput) => {
     if (!editingRecord) return;
-    setRecords((prev) =>
-      prev.map((r) => (r.id === editingRecord.id ? { ...record, id: r.id } : r))
-    );
+    const { username, password } = createUserFromRecord({
+      ...record,
+      username: editingRecord.username,
+      password: editingRecord.password,
+    });
+    const updatedRecord: UserRecord = {
+      ...record,
+      id: editingRecord.id,
+      username,
+      password,
+    };
+    setRecords((prev) => prev.map((r) => (r.id === editingRecord.id ? updatedRecord : r)));
     setEditingRecord(null);
     setIsFormOpen(false);
   };
 
   const handleDeleteRecord = (id: string) => {
+    const recordToDelete = records.find((r) => r.id === id);
+    if (!recordToDelete) return;
     if (confirm("¿Estás seguro de que deseas eliminar esta ficha?")) {
+      removeAuthUser(recordToDelete.username);
       setRecords((prev) => prev.filter((r) => r.id !== id));
     }
   };
@@ -100,12 +126,15 @@ export function UserRecordManagement() {
     setIsFormOpen(true);
   };
 
-  const filteredRecords = records.filter(
-    (record) =>
-      record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  const filteredRecords = records.filter((record) => {
+    const fullName = `${record.firstName} ${record.lastName}`.toLowerCase();
+    return (
+      fullName.includes(searchTerm.toLowerCase()) ||
       record.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      record.serialNumber1.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.serialNumber2.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  });
 
   return (
     <div className="mt-6 rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -114,9 +143,6 @@ export function UserRecordManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-slate-800">Fichas del Usuario</h2>
-            <p className="mt-0.5 text-sm text-slate-600">
-              Gestión de equipos y asignaciones de personal
-            </p>
           </div>
           <button
             onClick={openAddForm}
@@ -135,7 +161,7 @@ export function UserRecordManagement() {
             placeholder="Buscar por nombre, cargo o serial..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
+            className="w-48 max-w-full bg-transparent text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
           />
         </div>
       </div>
@@ -153,7 +179,7 @@ export function UserRecordManagement() {
                 {record.photo ? (
                   <img
                     src={record.photo}
-                    alt={record.name}
+                    alt={`${record.firstName} ${record.lastName}`}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -161,7 +187,25 @@ export function UserRecordManagement() {
                 )}
               </div>
               <div className="flex-1 overflow-hidden">
-                <h3 className="truncate text-sm font-bold text-slate-800">{record.name}</h3>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="truncate text-sm font-bold text-slate-800">
+                    {record.firstName} {record.lastName}
+                  </h3>
+                  <span
+                    className={[
+                      "rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em]",
+                      record.role === "Administrador"
+                        ? "bg-blue-100 text-blue-700"
+                        : record.role === "Supervisor"
+                        ? "bg-amber-100 text-amber-800"
+                        : record.role === "Agente"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : "bg-slate-100 text-slate-700",
+                    ].join(" ")}
+                  >
+                    {record.role}
+                  </span>
+                </div>
                 <p className="truncate text-xs text-slate-600">{record.position}</p>
                 <p className="mt-0.5 text-xs text-slate-500">
                   Ingreso: {new Date(record.entryDate).toLocaleDateString("es-MX")}
@@ -171,33 +215,31 @@ export function UserRecordManagement() {
 
             {/* Details */}
             <div className="mt-4 space-y-2 border-t border-slate-100 pt-3">
-              <div className="flex justify-between text-xs">
-                <span className="font-medium text-slate-600">Usuario:</span>
-                <span className="text-slate-800">{record.username}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="font-medium text-slate-600">Rol:</span>
-                <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">{record.role}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="font-medium text-slate-600">Teléfono:</span>
-                <span className="text-slate-800">{record.assignedPhone}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="font-medium text-slate-600">Modelo:</span>
-                <span className="text-slate-800">{record.deviceModel}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="font-medium text-slate-600">Número:</span>
-                <span className="text-slate-800">{record.deviceNumber}</span>
-              </div>
-              <div className="flex justify-between text-xs">
-                <span className="font-medium text-slate-600">Serial:</span>
-                <span className="font-mono font-semibold text-slate-900">
-                  {record.serialNumber}
-                </span>
-              </div>
-            </div>
+               <div className="grid gap-2 text-xs">
+                 <div className="flex justify-between">
+                   <span className="font-medium text-slate-600">Teléfono:</span>
+                   <span className="text-slate-800">{record.assignedPhone}</span>
+                 </div>
+                 <div className="flex justify-between">
+                   <span className="font-medium text-slate-600">Modelo:</span>
+                   <span className="text-slate-800">{record.deviceModel}</span>
+                 </div>
+                 <div className="flex justify-between">
+                   <span className="font-medium text-slate-600">Serial 1:</span>
+                   <span className="font-mono font-semibold text-slate-900">
+                     {record.serialNumber1}
+                   </span>
+                 </div>
+                 {record.serialNumber2 ? (
+                   <div className="flex justify-between">
+                     <span className="font-medium text-slate-600">Serial 2:</span>
+                     <span className="font-mono font-semibold text-slate-900">
+                       {record.serialNumber2}
+                     </span>
+                   </div>
+                 ) : null}
+                  </div>
+                </div>
 
             {/* Actions */}
             <div className="mt-4 flex gap-2 border-t border-slate-100 pt-3">
@@ -243,11 +285,11 @@ export function UserRecordManagement() {
             <Dialog.Title className="text-xl font-bold text-slate-800">
               {editingRecord ? "Editar Ficha" : "Añadir Nueva Ficha"}
             </Dialog.Title>
-            <Dialog.Description className="mt-1 text-sm text-slate-600">
-              {editingRecord
-                ? "Actualiza la información del usuario y su equipo asignado"
-                : "Completa todos los campos para registrar un nuevo usuario"}
-            </Dialog.Description>
+            {editingRecord && (
+              <Dialog.Description className="mt-1 text-sm text-slate-600">
+                Actualiza la información del usuario y su equipo asignado
+              </Dialog.Description>
+            )}
 
             <UserRecordForm
               initialData={editingRecord || undefined}

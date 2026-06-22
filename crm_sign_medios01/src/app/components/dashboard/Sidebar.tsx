@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { Home, ClipboardList, BookUser, User, Settings, LogOut, SlidersHorizontal } from "lucide-react";
+import { Home, ClipboardList, BookUser, User, Settings, LogOut, SlidersHorizontal, FileText } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import companyLogo from "../../../imports/IMG_20260602_130639_278.jpg";
@@ -89,6 +89,26 @@ export function Sidebar({ selectedNode, onSelectNode }: SidebarProps) {
             />
             <span className="flex-1 truncate">Ajustes</span>
             {selectedNode === "ajustes" && (
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" />
+            )}
+          </div>
+
+          {/* Embedded Signup */}
+          <div
+            className={[
+              "flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-all",
+              selectedNode === "embedded-signup"
+                ? "bg-blue-50 font-semibold text-blue-700"
+                : "text-slate-700 hover:bg-slate-100",
+            ].join(" ")}
+            onClick={() => navigate("/embedded-signup")}
+          >
+            <FileText
+              size={18}
+              className={selectedNode === "embedded-signup" ? "text-blue-600" : "text-slate-500"}
+            />
+            <span className="flex-1 truncate">Embedded Signup</span>
+            {selectedNode === "embedded-signup" && (
               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" />
             )}
           </div>

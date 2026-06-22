@@ -4,7 +4,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { UserManagementPage } from "./pages/UserManagementPage";
 import { DirectorioPage } from "./pages/DirectorioPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { AgentPanelPage } from "./pages/AgentPanelPage";
+import { EmbeddedSignupPage } from "./pages/EmbeddedSignupPage";
 
 export const router = createBrowserRouter([
   {
@@ -24,11 +24,11 @@ export const router = createBrowserRouter([
     Component: DirectorioPage,
   },
   {
-    path: "/ajustes",
-    Component: SettingsPage,
+    path: "/embedded-signup",
+    Component: EmbeddedSignupPage,
   },
   {
-    path: "/panel-agente",
-    Component: AgentPanelPage,
+    path: "/ajustes",
+    Component: SettingsPage,
   },
 ]);

@@ -13,10 +13,18 @@ interface FormErrors {
   phone?: string;
 }
 
+function parseTagList(value: string) {
+  return value
+    .split(/[,;]+/)
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
 export function DirectorioForm({ initialData, onSubmit, onCancel }: DirectorioFormProps) {
   const [formData, setFormData] = useState({
     name: initialData?.name || "",
     phone: initialData?.phone || "",
+    tags: initialData?.tags?.join(", ") || "",
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -24,24 +32,26 @@ export function DirectorioForm({ initialData, onSubmit, onCancel }: DirectorioFo
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.name.trim()) newErrors.name = "El nombre es obligatorio";
-    if (!formData.phone.trim()) newErrors.phone = "El teléfono es obligatorio";
+    if (!formData.name.trim()) newErrors.name = "El nombre es obligatorio.";
+    if (!formData.phone.trim()) newErrors.phone = "El teléfono es obligatorio.";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validate()) {
-      onSubmit(formData);
-    }
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!validate()) return;
+    onSubmit({
+      name: formData.name.trim(),
+      phone: formData.phone.trim(),
+      tags: parseTagList(formData.tags),
+    });
   };
 
   return (
     <form onSubmit={handleSubmit} className="mt-6">
       <div className="space-y-4">
-        {/* Name */}
         <div>
           <Label.Root htmlFor="name" className="text-sm font-semibold text-black">
             Nombre Completo *
@@ -50,8 +60,8 @@ export function DirectorioForm({ initialData, onSubmit, onCancel }: DirectorioFo
             id="name"
             type="text"
             value={formData.name}
-            onChange={(e) => {
-              setFormData((prev) => ({ ...prev, name: e.target.value }));
+            onChange={(event) => {
+              setFormData((prev) => ({ ...prev, name: event.target.value }));
               setErrors((prev) => ({ ...prev, name: undefined }));
             }}
             placeholder="María González Pérez"
@@ -70,7 +80,6 @@ export function DirectorioForm({ initialData, onSubmit, onCancel }: DirectorioFo
           )}
         </div>
 
-        {/* Phone */}
         <div>
           <Label.Root htmlFor="phone" className="text-sm font-semibold text-black">
             Número Telefónico *
@@ -79,8 +88,8 @@ export function DirectorioForm({ initialData, onSubmit, onCancel }: DirectorioFo
             id="phone"
             type="tel"
             value={formData.phone}
-            onChange={(e) => {
-              setFormData((prev) => ({ ...prev, phone: e.target.value }));
+            onChange={(event) => {
+              setFormData((prev) => ({ ...prev, phone: event.target.value }));
               setErrors((prev) => ({ ...prev, phone: undefined }));
             }}
             placeholder="+52 55 1234 5678"
@@ -98,9 +107,25 @@ export function DirectorioForm({ initialData, onSubmit, onCancel }: DirectorioFo
             </p>
           )}
         </div>
+
+        <div>
+          <Label.Root htmlFor="tags" className="text-sm font-semibold text-black">
+            Etiquetas (separadas por comas)
+          </Label.Root>
+          <input
+            id="tags"
+            type="text"
+            value={formData.tags}
+            onChange={(event) => setFormData((prev) => ({ ...prev, tags: event.target.value }))}
+            placeholder="cliente, prospecto, vip"
+            className="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-black placeholder:text-gray-400 outline-none transition-all duration-150 focus:bg-white focus:border-blue-500 focus:ring-3 focus:ring-blue-500/15"
+          />
+          <p className="mt-1 text-xs text-slate-500">
+            La etiqueta define los segmentos a los que pertenecerá este contacto.
+          </p>
+        </div>
       </div>
 
-      {/* Actions */}
       <div className="mt-6 flex justify-end gap-3 border-t border-slate-200 pt-4">
         <button
           type="button"

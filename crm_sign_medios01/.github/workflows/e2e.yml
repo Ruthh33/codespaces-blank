@@ -1,0 +1,42 @@
+name: E2E Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: embedded_signup
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd='pg_isready -U postgres' --health-interval=5s --health-timeout=2s --health-retries=10
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+      - name: Install pnpm
+        run: npm i -g pnpm
+      - name: Install dependencies
+        run: pnpm install
+      - name: Wait for Postgres
+        run: npx wait-on tcp:5432 -t 30000 || true
+      - name: Run migrations
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/embedded_signup
+        run: pnpm run migrate
+      - name: Run e2e tests
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/embedded_signup
+        run: pnpm run test:e2e

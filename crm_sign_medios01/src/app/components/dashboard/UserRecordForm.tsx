@@ -3,42 +3,80 @@ import { Camera, Upload, X } from "lucide-react";
 import * as Label from "@radix-ui/react-label";
 import * as Select from "@radix-ui/react-select";
 import { ChevronDown } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "../ui/popover";
+import { Calendar } from "../ui/calendar";
 import type { UserRecord } from "./UserRecordManagement";
+
+export type UserRecordFormData = Omit<UserRecord, "id">;
 
 interface UserRecordFormProps {
   initialData?: UserRecord;
-  onSubmit: (data: Omit<UserRecord, "id">) => void;
+  onSubmit: (data: UserRecordFormData) => void;
   onCancel: () => void;
 }
 
 interface FormErrors {
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   position?: string;
   assignedPhone?: string;
   deviceModel?: string;
-  serialNumber?: string;
+  serialNumber1?: string;
+  serialNumber2?: string;
   entryDate?: string;
+  username?: string;
+  password?: string;
 }
 
 export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFormProps) {
-  const [formData, setFormData] = useState({
-    name: initialData?.name || "",
+  const isCreateMode = !initialData;
+
+  const [formData, setFormData] = useState<UserRecordFormData>({
+    firstName: initialData?.firstName || "",
+    lastName: initialData?.lastName || "",
     position: initialData?.position || "",
     assignedPhone: initialData?.assignedPhone || "",
     deviceModel: initialData?.deviceModel || "",
     deviceNumber: initialData?.deviceNumber || "",
-    serialNumber: initialData?.serialNumber || "",
+    serialNumber1: initialData?.serialNumber1 || "",
+    serialNumber2: initialData?.serialNumber2 || "",
     photo: initialData?.photo || "",
     entryDate: initialData?.entryDate || "",
+    role: initialData?.role || "Agente",
+    username: initialData?.username || "",
+    password: initialData?.password || "",
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [photoPreview, setPhotoPreview] = useState<string | undefined>(initialData?.photo);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
 
   const validate = (): boolean => {
-    // Validation removed per request — allow empty fields
-    setErrors({});
-    return true;
+    const newErrors: FormErrors = {};
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "El nombre es obligatorio.";
+    }
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "El apellido es obligatorio.";
+    }
+    if (!formData.serialNumber1.trim()) {
+      newErrors.serialNumber1 = "El número de serie 1 es obligatorio.";
+    }
+
+    if (isCreateMode && (formData.role === "Administrador" || formData.role === "Supervisor")) {
+      if (!formData.username.trim()) {
+        newErrors.username = "El nombre de usuario es obligatorio para este rol.";
+      }
+      if (!formData.password) {
+        newErrors.password = "La contraseña es obligatoria para este rol.";
+      } else if (formData.password.length < 6) {
+        newErrors.password = "La contraseña debe tener al menos 6 caracteres.";
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -106,31 +144,59 @@ export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFo
           </div>
         </div>
 
-        {/* Name */}
-        <div className="md:col-span-2">
-          <Label.Root htmlFor="name" className="text-sm font-semibold text-black">
-            Nombre Completo
+        {/* First and Last Name */}
+        <div>
+          <Label.Root htmlFor="firstName" className="text-sm font-semibold text-black">
+            Nombre
           </Label.Root>
           <input
-            id="name"
+            id="firstName"
             type="text"
-            value={formData.name}
+            value={formData.firstName}
             onChange={(e) => {
-              setFormData((prev) => ({ ...prev, name: e.target.value }));
-              setErrors((prev) => ({ ...prev, name: undefined }));
+              setFormData((prev) => ({ ...prev, firstName: e.target.value }));
+              setErrors((prev) => ({ ...prev, firstName: undefined }));
             }}
-            placeholder="María González Pérez"
+            placeholder="María"
             className={[
               "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-sm text-black placeholder:text-gray-400",
               "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
-              errors.name
+              errors.firstName
                 ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
                 : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
             ].join(" ")}
           />
-          {errors.name && (
+          {errors.firstName && (
             <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-              <span>•</span> {errors.name}
+              <span>•</span> {errors.firstName}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <Label.Root htmlFor="lastName" className="text-sm font-semibold text-black">
+            Apellido
+          </Label.Root>
+          <input
+            id="lastName"
+            type="text"
+            value={formData.lastName}
+            onChange={(e) => {
+              setFormData((prev) => ({ ...prev, lastName: e.target.value }));
+              setErrors((prev) => ({ ...prev, lastName: undefined }));
+            }}
+            placeholder="González"
+            className={[
+              "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-sm text-black placeholder:text-gray-400",
+              "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
+              errors.lastName
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
+                : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
+            ].join(" ")}
+          />
+          {errors.lastName && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+              <span>•</span> {errors.lastName}
             </p>
           )}
         </div>
@@ -156,27 +222,151 @@ export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFo
           />
         </div>
 
+        {/* Role */}
+        <div>
+          <Label.Root className="text-sm font-semibold text-black">Rol</Label.Root>
+          <Select.Root
+            value={formData.role}
+            onValueChange={(value) =>
+              setFormData((prev) => ({ ...prev, role: value as UserRecord["role"] }))
+            }
+          >
+            <Select.Trigger className="mt-1.5 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-slate-700 outline-none transition-all duration-150 focus:border-blue-500 focus:bg-white focus:ring-3 focus:ring-blue-500/15">
+              <Select.Value />
+              <Select.Icon>
+                <ChevronDown size={18} />
+              </Select.Icon>
+            </Select.Trigger>
+            <Select.Content
+              className="z-50 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl"
+              position="popper"
+              side="bottom"
+              align="start"
+            >
+              <Select.Viewport className="p-1">
+                {[
+                  "Administrador",
+                  "Supervisor",
+                  "Agente",
+                  "Suspendido",
+                ].map((option) => (
+                  <Select.Item
+                    key={option}
+                    value={option}
+                    className="flex cursor-pointer select-none items-center rounded-lg px-3 py-2 text-sm text-slate-700 outline-none aria-selected:bg-slate-100 aria-selected:text-slate-900 hover:bg-slate-50"
+                  >
+                    <Select.ItemText>{option}</Select.ItemText>
+                  </Select.Item>
+                ))}
+              </Select.Viewport>
+            </Select.Content>
+          </Select.Root>
+        </div>
+
+        {isCreateMode && (formData.role === "Administrador" || formData.role === "Supervisor") && (
+          <>
+            <div className="md:col-span-2">
+              <Label.Root htmlFor="username" className="text-sm font-semibold text-black">
+                Nombre de Usuario
+              </Label.Root>
+              <input
+                id="username"
+                type="text"
+                value={formData.username}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, username: e.target.value }));
+                  setErrors((prev) => ({ ...prev, username: undefined }));
+                }}
+                placeholder="adminnuevo"
+                className={[
+                  "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-sm text-black placeholder:text-gray-400",
+                  "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
+                  errors.username
+                    ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
+                    : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
+                ].join(" ")}
+              />
+              {errors.username && (
+                <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                  <span>•</span> {errors.username}
+                </p>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <Label.Root htmlFor="password" className="text-sm font-semibold text-black">
+                Contraseña
+              </Label.Root>
+              <input
+                id="password"
+                type="password"
+                value={formData.password}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, password: e.target.value }));
+                  setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+                placeholder="Contraseña segura"
+                className={[
+                  "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-sm text-black placeholder:text-gray-400",
+                  "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
+                  errors.password
+                    ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
+                    : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
+                ].join(" ")}
+              />
+              {errors.password && (
+                <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+                  <span>•</span> {errors.password}
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
         {/* Entry Date */}
         <div>
           <Label.Root htmlFor="entryDate" className="text-sm font-semibold text-black">
             Fecha de Ingreso
           </Label.Root>
-          <input
-            id="entryDate"
-            type="date"
-            value={formData.entryDate}
-            onChange={(e) => {
-              setFormData((prev) => ({ ...prev, entryDate: e.target.value }));
-              setErrors((prev) => ({ ...prev, entryDate: undefined }));
-            }}
-            className={[
-              "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-sm text-black",
-              "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
-              errors.entryDate
-                ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
-                : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
-            ].join(" ")}
-          />
+          <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                id="entryDate"
+                className={[
+                  "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-left text-sm text-black",
+                  "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
+                  errors.entryDate
+                    ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
+                    : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
+                ].join(" ")}
+              >
+                {formData.entryDate
+                  ? new Intl.DateTimeFormat("es-ES", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric",
+                    }).format(new Date(formData.entryDate))
+                  : "Selecciona una fecha"}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent className="mt-1">
+              <Calendar
+                mode="single"
+                selected={formData.entryDate ? new Date(formData.entryDate) : undefined}
+                onSelect={(date) => {
+                  if (date) {
+                    setFormData((prev) => ({
+                      ...prev,
+                      entryDate: date.toISOString().slice(0, 10),
+                    }));
+                    setErrors((prev) => ({ ...prev, entryDate: undefined }));
+                    setIsCalendarOpen(false);
+                  }
+                }}
+              />
+            </PopoverContent>
+          </Popover>
           {errors.entryDate && (
             <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
               <span>•</span> {errors.entryDate}
@@ -187,7 +377,7 @@ export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFo
         {/* Assigned Phone */}
         <div>
           <Label.Root htmlFor="assignedPhone" className="text-sm font-semibold text-black">
-            Teléfono Asignado
+            Teléfono
           </Label.Root>
           <input
             id="assignedPhone"
@@ -243,34 +433,66 @@ export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFo
         </div>
 
 
-        {/* Serial Number */}
+        {/* Número de Serie 1 */}
         <div>
-          <Label.Root htmlFor="serialNumber" className="text-sm font-semibold text-black">
-            Número de Serie
+          <Label.Root htmlFor="serialNumber1" className="text-sm font-semibold text-black">
+            Número de Serie 1
           </Label.Root>
           <input
-            id="serialNumber"
+            id="serialNumber1"
             type="text"
-            value={formData.serialNumber}
+            value={formData.serialNumber1}
             onChange={(e) => {
               setFormData((prev) => ({
                 ...prev,
-                serialNumber: e.target.value.toUpperCase(),
+                serialNumber1: e.target.value.toUpperCase(),
               }));
-              setErrors((prev) => ({ ...prev, serialNumber: undefined }));
+              setErrors((prev) => ({ ...prev, serialNumber1: undefined }));
             }}
             placeholder="F2KXH9MNPQ3L"
             className={[
               "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 font-mono text-sm font-semibold text-black placeholder:text-gray-400",
               "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
-              errors.serialNumber
+              errors.serialNumber1
                 ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
                 : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
             ].join(" ")}
           />
-          {errors.serialNumber && (
+          {errors.serialNumber1 && (
             <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-              <span>•</span> {errors.serialNumber}
+              <span>•</span> {errors.serialNumber1}
+            </p>
+          )}
+        </div>
+
+        {/* Número de Serie 2 */}
+        <div>
+          <Label.Root htmlFor="serialNumber2" className="text-sm font-semibold text-black">
+            Número de Serie 2
+          </Label.Root>
+          <input
+            id="serialNumber2"
+            type="text"
+            value={formData.serialNumber2}
+            onChange={(e) => {
+              setFormData((prev) => ({
+                ...prev,
+                serialNumber2: e.target.value.toUpperCase(),
+              }));
+              setErrors((prev) => ({ ...prev, serialNumber2: undefined }));
+            }}
+            placeholder="F2KXH9MNPQ3L"
+            className={[
+              "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 font-mono text-sm font-semibold text-black placeholder:text-gray-400",
+              "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
+              errors.serialNumber2
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
+                : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
+            ].join(" ")}
+          />
+          {errors.serialNumber2 && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+              <span>•</span> {errors.serialNumber2}
             </p>
           )}
         </div>
