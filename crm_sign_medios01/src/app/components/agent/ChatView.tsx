@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import type { PanelConversation, PanelMessage, PanelAttachment } from "./agentPanelData";
 import { CURRENT_AGENT } from "./agentPanelData";
-import { ContactPanel } from "./ContactPanel";
+
 import { LabelsModal, DEFAULT_LABELS } from "./LabelsModal";
 import type { Label } from "./LabelsModal";
 
@@ -536,7 +536,7 @@ interface ChatViewProps {
 
 export function ChatView({ conv, onUpdateMessages, localMessages }: ChatViewProps) {
   const [inputMode,      setInputMode]      = useState<InputMode>("whatsapp");
-  const [contactOpen,    setContactOpen]    = useState(false);
+
   const [editingName,    setEditingName]    = useState(false);
   const [clientName,     setClientName]     = useState(conv?.clientName ?? "");
   const [labelsOpen,     setLabelsOpen]     = useState(false);
@@ -555,7 +555,7 @@ export function ChatView({ conv, onUpdateMessages, localMessages }: ChatViewProp
   /* Sync name when conversation changes */
   useEffect(() => {
     setClientName(conv?.clientName ?? "");
-    setContactOpen(false);
+
     setEditingName(false);
   }, [conv?.id]);
 
@@ -659,27 +659,11 @@ export function ChatView({ conv, onUpdateMessages, localMessages }: ChatViewProp
                   className="z-50 min-w-[210px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
                 >
                   <DropdownMenu.Item
-                    onSelect={() => setContactOpen((v) => !v)}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100"
-                  >
-                    <UserIcon size={15} className="text-blue-500" />
-                    {contactOpen ? "Ocultar ficha" : "Ver ficha de contacto"}
-                  </DropdownMenu.Item>
-
-                  <DropdownMenu.Item
-                    onSelect={() => { setContactOpen(false); setEditingName(true); }}
+                    onSelect={() => setEditingName(true)}
                     className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100"
                   >
                     <Edit3 size={15} className="text-slate-400" />
                     Editar nombre del contacto
-                  </DropdownMenu.Item>
-
-                  <DropdownMenu.Item
-                    onSelect={() => setContactOpen(true)}
-                    className="flex cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100"
-                  >
-                    <UserPlus size={15} className="text-emerald-500" />
-                    Agregar a contactos
                   </DropdownMenu.Item>
 
                   <DropdownMenu.Item
@@ -725,14 +709,7 @@ export function ChatView({ conv, onUpdateMessages, localMessages }: ChatViewProp
         <HybridBar mode={inputMode} onModeChange={setInputMode} onSend={handleSend} />
       </div>
 
-      {/* ── Contact panel (right) ── */}
-      {contactOpen && (
-        <ContactPanel
-          conv={{ ...conv, clientName }}
-          onClose={() => setContactOpen(false)}
-          onUpdateName={handleUpdateName}
-        />
-      )}
+
 
       {/* ── Labels modal ── */}
       <LabelsModal

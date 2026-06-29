@@ -4,7 +4,6 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { UserManagementPage } from "./pages/UserManagementPage";
 import { DirectorioPage } from "./pages/DirectorioPage";
 import { SettingsPage } from "./pages/SettingsPage";
-import { AgentPanelPage } from "./pages/AgentPanelPage";
 
 export const router = createBrowserRouter([
   {
@@ -26,9 +25,5 @@ export const router = createBrowserRouter([
   {
     path: "/ajustes",
     Component: SettingsPage,
-  },
-  {
-    path: "/panel-agente",
-    Component: AgentPanelPage,
   },
 ]);

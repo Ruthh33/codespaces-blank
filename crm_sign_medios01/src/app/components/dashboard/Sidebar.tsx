@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router";
-import { Home, ClipboardList, BookUser, User, Settings, LogOut, SlidersHorizontal } from "lucide-react";
+import { Home, ClipboardList, BookUser, User, Settings, LogOut, SlidersHorizontal, Smartphone, MessageCircle } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import companyLogo from "../../../imports/IMG_20260602_130639_278.jpg";
@@ -51,7 +51,45 @@ export function Sidebar({ selectedNode, onSelectNode }: SidebarProps) {
             )}
           </div>
 
-          {/* (Gestión de Fichas eliminado de la barra lateral) */}
+          {/* Conectar Dispositivos */}
+          <div
+            className={[
+              "flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-all",
+              selectedNode === "conectar-dispositivos"
+                ? "bg-blue-50 font-semibold text-blue-700"
+                : "text-slate-700 hover:bg-slate-100",
+            ].join(" ")}
+            onClick={() => onSelectNode("conectar-dispositivos")}
+          >
+            <Smartphone
+              size={18}
+              className={selectedNode === "conectar-dispositivos" ? "text-blue-600" : "text-slate-500"}
+            />
+            <span className="flex-1 truncate">Conectar Dispositivos</span>
+            {selectedNode === "conectar-dispositivos" && (
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" />
+            )}
+          </div>
+
+          {/* Plantillas */}
+          <div
+            className={[
+              "flex cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-all",
+              selectedNode === "plantillas"
+                ? "bg-blue-50 font-semibold text-blue-700"
+                : "text-slate-700 hover:bg-slate-100",
+            ].join(" ")}
+            onClick={() => onSelectNode("plantillas")}
+          >
+            <MessageCircle
+              size={18}
+              className={selectedNode === "plantillas" ? "text-blue-600" : "text-slate-500"}
+            />
+            <span className="flex-1 truncate">Plantillas</span>
+            {selectedNode === "plantillas" && (
+              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-600" />
+            )}
+          </div>
 
           {/* Directorio */}
           <div

@@ -8,7 +8,7 @@ import { UserRecordManagement } from "../components/dashboard/UserRecordManageme
 import {
   Download, MessageSquare, Users, HardDrive, CheckCircle2, Loader2,
   Clock, FileJson, FileText, ShieldCheck, AlertCircle, SlidersHorizontal,
-  UserPlus, Mail, ChevronDown, Trash2, RefreshCw, Crown, Eye,
+  UserPlus, Mail, ChevronDown, Trash2, RefreshCw, Crown,
   UserCog, Shield, Send, X, MoreVertical, BadgeCheck,
 } from "lucide-react";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
@@ -20,7 +20,7 @@ import * as Select from "@radix-ui/react-select";
 type BackupStatus = "idle" | "running" | "done" | "error";
 type BackupRecord = { label: string; time: string; type: "chats" | "contacts" | "full" };
 
-type Role = "Administrador" | "Supervisor" | "Agente" | "Solo lectura";
+type Role = "Administrador" | "Supervisor" | "Agente";
 type MemberStatus = "activo" | "pendiente" | "suspendido";
 
 interface TeamMember {
@@ -51,7 +51,6 @@ const initialMembers: TeamMember[] = [
   { id: "m3", name: "María Torres",    email: "mtorres@signmedios.com",    role: "Agente",       status: "activo",    joinedAt: "10/03/2025", initials: "MT", avatarColor: "bg-purple-600" },
   { id: "m4", name: "Andrés Vargas",   email: "avargas@signmedios.com",    role: "Agente",       status: "activo",    joinedAt: "22/03/2025", initials: "AV", avatarColor: "bg-amber-600" },
   { id: "m5", name: "Gabriela Ruiz",   email: "gruiz@signmedios.com",      role: "Supervisor",   status: "activo",    joinedAt: "05/04/2025", initials: "GR", avatarColor: "bg-rose-600" },
-  { id: "m6", name: "Luis Castillo",   email: "lcastillo@signmedios.com",  role: "Solo lectura", status: "suspendido",joinedAt: "18/04/2025", initials: "LC", avatarColor: "bg-slate-500" },
 ];
 
 /* ══════════════════════════════════════════════════════
@@ -159,12 +158,6 @@ const roleConfig: Record<Role, { icon: React.ReactNode; color: string; bg: strin
     bg: "bg-amber-100",
     desc: "Accede solo a sus propias conversaciones y contactos asignados.",
   },
-  "Solo lectura": {
-    icon: <Eye size={13} />,
-    color: "text-slate-600",
-    bg: "bg-slate-100",
-    desc: "Puede visualizar información pero no realizar cambios.",
-  },
 };
 
 const statusConfig: Record<MemberStatus, { label: string; cls: string; dot: string }> = {
@@ -255,7 +248,7 @@ function StatusBadge({ status }: { status: MemberStatus }) {
 
 /* Radix Select wrapper for role picker */
 function RoleSelect({ value, onChange }: { value: Role; onChange: (r: Role) => void }) {
-  const roles: Role[] = ["Administrador", "Supervisor", "Agente", "Solo lectura"];
+  const roles: Role[] = ["Administrador", "Supervisor", "Agente"];
   return (
     <Select.Root value={value} onValueChange={(v) => onChange(v as Role)}>
       <Select.Trigger className="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200">
@@ -362,7 +355,7 @@ function MemberRow({ member, onChangeRole, onToggleSuspend, onRemove }: {
                 </DropdownMenu.SubTrigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.SubContent className="z-50 min-w-[180px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg" sideOffset={4}>
-                    {(["Administrador","Supervisor","Agente","Solo lectura"] as Role[]).map((r) => (
+                    {(["Administrador","Supervisor","Agente"] as Role[]).map((r) => (
                       <DropdownMenu.Item key={r}
                         className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100"
                         onSelect={() => onChangeRole(member.id, r)}>
@@ -714,21 +707,6 @@ export function SettingsPage() {
                   <UserRecordManagement />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <h4 className="flex items-center gap-2 text-sm font-semibold text-slate-700">
-                    <Users size={14} className="text-blue-600" />
-                    Miembros del equipo ({members.length})
-                  </h4>
-                  {members.map((m) => (
-                    <MemberRow
-                      key={m.id}
-                      member={m}
-                      onChangeRole={handleChangeRole}
-                      onToggleSuspend={handleToggleSuspend}
-                      onRemove={handleRemove}
-                    />
-                  ))}
-                </div>
               </div>
 
               {/* ── Right col: role reference ── */}

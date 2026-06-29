@@ -5,14 +5,16 @@ import { UserRecordForm } from "./UserRecordForm";
 
 export interface UserRecord {
   id: string;
+  firstName: string;
+  lastName: string;
   position: string;
   assignedPhone: string;
   deviceModel: string;
   deviceNumber: string;
   serialNumber: string;
+  serialNumber2: string;
   photo?: string;
   entryDate: string;
-  name: string;
   username: string;
   password: string;
   role: "Administrador" | "Supervisor" | "Agente" | "Suspendido";
@@ -21,12 +23,14 @@ export interface UserRecord {
 const mockRecords: UserRecord[] = [
   {
     id: "1",
-    name: "María González",
+    firstName: "María",
+    lastName: "González",
     position: "Ejecutivo de Ventas",
     assignedPhone: "+52 55 1234 5678",
     deviceModel: "iPhone 14 Pro",
     deviceNumber: "5512345678",
     serialNumber: "F2KXH9MNPQ3L",
+    serialNumber2: "SN2-001-AA",
     entryDate: "2024-01-15",
     username: "mgonzalez",
     password: "Pass@2026",
@@ -34,12 +38,14 @@ const mockRecords: UserRecord[] = [
   },
   {
     id: "2",
-    name: "Juan Pérez",
+    firstName: "Juan",
+    lastName: "Pérez",
     position: "Gerente de Zona",
     assignedPhone: "+52 55 8765 4321",
     deviceModel: "Samsung Galaxy S23",
     deviceNumber: "5587654321",
     serialNumber: "R58NVKDM9X2P",
+    serialNumber2: "SN2-002-BB",
     entryDate: "2023-08-22",
     username: "jperez",
     password: "Pass@2026",
@@ -47,12 +53,14 @@ const mockRecords: UserRecord[] = [
   },
   {
     id: "3",
-    name: "Ana Martínez",
+    firstName: "Ana",
+    lastName: "Martínez",
     position: "Soporte Técnico",
     assignedPhone: "+52 55 2468 1357",
     deviceModel: "iPhone 13",
     deviceNumber: "5524681357",
     serialNumber: "C3WYH7TLPK9M",
+    serialNumber2: "SN2-003-CC",
     entryDate: "2024-03-10",
     username: "amartinez",
     password: "Pass@2026",
@@ -101,10 +109,14 @@ export function UserRecordManagement() {
   };
 
   const filteredRecords = records.filter(
-    (record) =>
-      record.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    (record) => {
+      const fullName = `${record.firstName} ${record.lastName}`.toLowerCase();
+      return (
+        fullName.includes(searchTerm.toLowerCase()) ||
+        record.position.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.serialNumber.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
   );
 
   return (
@@ -153,7 +165,7 @@ export function UserRecordManagement() {
                 {record.photo ? (
                   <img
                     src={record.photo}
-                    alt={record.name}
+                    alt={`${record.firstName} ${record.lastName}`}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -161,7 +173,10 @@ export function UserRecordManagement() {
                 )}
               </div>
               <div className="flex-1 overflow-hidden">
-                <h3 className="truncate text-sm font-bold text-slate-800">{record.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="truncate text-base font-bold text-slate-900">{record.firstName} {record.lastName}</h3>
+                  <span className="inline-flex whitespace-nowrap rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">{record.role}</span>
+                </div>
                 <p className="truncate text-xs text-slate-600">{record.position}</p>
                 <p className="mt-0.5 text-xs text-slate-500">
                   Ingreso: {new Date(record.entryDate).toLocaleDateString("es-MX")}
@@ -176,10 +191,6 @@ export function UserRecordManagement() {
                 <span className="text-slate-800">{record.username}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="font-medium text-slate-600">Rol:</span>
-                <span className="inline-flex rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">{record.role}</span>
-              </div>
-              <div className="flex justify-between text-xs">
                 <span className="font-medium text-slate-600">Teléfono:</span>
                 <span className="text-slate-800">{record.assignedPhone}</span>
               </div>
@@ -192,9 +203,15 @@ export function UserRecordManagement() {
                 <span className="text-slate-800">{record.deviceNumber}</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="font-medium text-slate-600">Serial:</span>
+                <span className="font-medium text-slate-600">Serial 1:</span>
                 <span className="font-mono font-semibold text-slate-900">
                   {record.serialNumber}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="font-medium text-slate-600">Serial 2:</span>
+                <span className="font-mono font-semibold text-slate-900">
+                  {record.serialNumber2}
                 </span>
               </div>
             </div>

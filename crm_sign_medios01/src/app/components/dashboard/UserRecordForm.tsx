@@ -12,22 +12,32 @@ interface UserRecordFormProps {
 }
 
 interface FormErrors {
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   position?: string;
   assignedPhone?: string;
   deviceModel?: string;
   serialNumber?: string;
+  serialNumber2?: string;
+  username?: string;
+  password?: string;
+  role?: string;
   entryDate?: string;
 }
 
 export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFormProps) {
   const [formData, setFormData] = useState({
-    name: initialData?.name || "",
+    firstName: initialData?.firstName || "",
+    lastName: initialData?.lastName || "",
     position: initialData?.position || "",
     assignedPhone: initialData?.assignedPhone || "",
     deviceModel: initialData?.deviceModel || "",
     deviceNumber: initialData?.deviceNumber || "",
     serialNumber: initialData?.serialNumber || "",
+    serialNumber2: initialData?.serialNumber2 || "",
+    username: initialData?.username || "",
+    password: initialData?.password || "",
+    role: initialData?.role || "Agente",
     photo: initialData?.photo || "",
     entryDate: initialData?.entryDate || "",
   });
@@ -107,30 +117,152 @@ export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFo
         </div>
 
         {/* Name */}
-        <div className="md:col-span-2">
-          <Label.Root htmlFor="name" className="text-sm font-semibold text-black">
-            Nombre Completo
+        <div>
+          <Label.Root htmlFor="firstName" className="text-sm font-semibold text-black">
+            Nombre
           </Label.Root>
           <input
-            id="name"
+            id="firstName"
             type="text"
-            value={formData.name}
+            value={formData.firstName}
             onChange={(e) => {
-              setFormData((prev) => ({ ...prev, name: e.target.value }));
-              setErrors((prev) => ({ ...prev, name: undefined }));
+              setFormData((prev) => ({ ...prev, firstName: e.target.value }));
+              setErrors((prev) => ({ ...prev, firstName: undefined }));
             }}
-            placeholder="María González Pérez"
+            placeholder="María"
             className={[
               "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-sm text-black placeholder:text-gray-400",
               "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
-              errors.name
+              errors.firstName
                 ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
                 : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
             ].join(" ")}
           />
-          {errors.name && (
+          {errors.firstName && (
             <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
-              <span>•</span> {errors.name}
+              <span>•</span> {errors.firstName}
+            </p>
+          )}
+        </div>
+
+        {/* Last Name */}
+        <div>
+          <Label.Root htmlFor="lastName" className="text-sm font-semibold text-black">
+            Apellidos
+          </Label.Root>
+          <input
+            id="lastName"
+            type="text"
+            value={formData.lastName}
+            onChange={(e) => {
+              setFormData((prev) => ({ ...prev, lastName: e.target.value }));
+              setErrors((prev) => ({ ...prev, lastName: undefined }));
+            }}
+            placeholder="González Pérez"
+            className={[
+              "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-sm text-black placeholder:text-gray-400",
+              "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
+              errors.lastName
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
+                : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
+            ].join(" ")}
+          />
+          {errors.lastName && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+              <span>•</span> {errors.lastName}
+            </p>
+          )}
+        </div>
+
+        {/* Username */}
+        <div>
+          <Label.Root htmlFor="username" className="text-sm font-semibold text-black">
+            Usuario
+          </Label.Root>
+          <input
+            id="username"
+            type="text"
+            value={formData.username}
+            onChange={(e) => {
+              setFormData((prev) => ({ ...prev, username: e.target.value }));
+              setErrors((prev) => ({ ...prev, username: undefined }));
+            }}
+            placeholder="mgonzalez"
+            className={[
+              "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-sm text-black placeholder:text-gray-400",
+              "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
+              errors.username
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
+                : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
+            ].join(" ")}
+          />
+          {errors.username && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+              <span>•</span> {errors.username}
+            </p>
+          )}
+        </div>
+
+        {/* Password */}
+        <div>
+          <Label.Root htmlFor="password" className="text-sm font-semibold text-black">
+            Contraseña
+          </Label.Root>
+          <input
+            id="password"
+            type="password"
+            value={formData.password}
+            onChange={(e) => {
+              setFormData((prev) => ({ ...prev, password: e.target.value }));
+              setErrors((prev) => ({ ...prev, password: undefined }));
+            }}
+            placeholder="Pass@2026"
+            className={[
+              "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 text-sm text-black placeholder:text-gray-400",
+              "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
+              errors.password
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
+                : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
+            ].join(" ")}
+          />
+          {errors.password && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+              <span>•</span> {errors.password}
+            </p>
+          )}
+        </div>
+
+        {/* Role */}
+        <div>
+          <Label.Root htmlFor="role" className="text-sm font-semibold text-black">
+            Rol
+          </Label.Root>
+          <Select.Root value={formData.role} onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}>
+            <Select.Trigger className="mt-1.5 flex w-full items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm text-black outline-none transition-all duration-150 focus:border-blue-500 focus:bg-white focus:ring-3 focus:ring-blue-500/15">
+              <Select.Value />
+              <Select.Icon>
+                <ChevronDown size={16} className="text-gray-400" />
+              </Select.Icon>
+            </Select.Trigger>
+            <Select.Portal>
+              <Select.Content className="z-50 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+                <Select.Viewport>
+                  <Select.Item value="Administrador" className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100 focus:bg-slate-100">
+                    <Select.ItemText>Administrador</Select.ItemText>
+                  </Select.Item>
+                  <Select.Item value="Supervisor" className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100 focus:bg-slate-100">
+                    <Select.ItemText>Supervisor</Select.ItemText>
+                  </Select.Item>
+                  <Select.Item value="Agente" className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100 focus:bg-slate-100">
+                    <Select.ItemText>Agente</Select.ItemText>
+                  </Select.Item>
+                </Select.Viewport>
+              </Select.Content>
+            </Select.Portal>
+          </Select.Root>
+          {errors.role && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+              <span>•</span> {errors.role}
             </p>
           )}
         </div>
@@ -243,10 +375,10 @@ export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFo
         </div>
 
 
-        {/* Serial Number */}
+        {/* Serial Number 1 */}
         <div>
           <Label.Root htmlFor="serialNumber" className="text-sm font-semibold text-black">
-            Número de Serie
+            Número de Serie 1
           </Label.Root>
           <input
             id="serialNumber"
@@ -274,6 +406,39 @@ export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFo
             </p>
           )}
         </div>
+
+        {/* Serial Number 2 */}
+        <div>
+          <Label.Root htmlFor="serialNumber2" className="text-sm font-semibold text-black">
+            Número de Serie 2
+          </Label.Root>
+          <input
+            id="serialNumber2"
+            type="text"
+            value={formData.serialNumber2}
+            onChange={(e) => {
+              setFormData((prev) => ({
+                ...prev,
+                serialNumber2: e.target.value.toUpperCase(),
+              }));
+              setErrors((prev) => ({ ...prev, serialNumber2: undefined }));
+            }}
+            placeholder="SN2-001-AA"
+            className={[
+              "mt-1.5 w-full rounded-xl border bg-gray-50 px-3.5 py-2.5 font-mono text-sm font-semibold text-black placeholder:text-gray-400",
+              "outline-none transition-all duration-150 focus:bg-white focus:ring-3",
+              errors.serialNumber2
+                ? "border-red-400 focus:border-red-500 focus:ring-red-400/15"
+                : "border-gray-200 focus:border-blue-500 focus:ring-blue-500/15",
+            ].join(" ")}
+          />
+          {errors.serialNumber2 && (
+            <p className="mt-1 flex items-center gap-1 text-xs text-red-600">
+              <span>•</span> {errors.serialNumber2}
+            </p>
+          )}
+        </div>
+
       </div>
 
       {/* Actions */}

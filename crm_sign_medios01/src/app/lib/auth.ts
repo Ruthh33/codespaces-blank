@@ -36,52 +36,7 @@ const MOCK_USERS: Array<AuthUser & { password: string }> = [
     title:    "Gerente General",
   },
 
-  /* Agents / Vendors */
-  {
-    id:       "agent-1",
-    name:     "Carlos Mendoza",
-    initials: "CM",
-    username: "cmendoza",
-    password: "agente2026",
-    role:     "agent",
-    title:    "Agente Senior",
-  },
-  {
-    id:       "agent-2",
-    name:     "María Torres",
-    initials: "MT",
-    username: "mtorres",
-    password: "agente2026",
-    role:     "agent",
-    title:    "Agente de Soporte",
-  },
-  {
-    id:       "agent-3",
-    name:     "Andrés Vargas",
-    initials: "AV",
-    username: "avargas",
-    password: "agente2026",
-    role:     "agent",
-    title:    "Agente Comercial",
-  },
-  {
-    id:       "agent-4",
-    name:     "Gabriela Ruiz",
-    initials: "GR",
-    username: "gruiz",
-    password: "agente2026",
-    role:     "agent",
-    title:    "Agente Senior",
-  },
-  {
-    id:       "agent-5",
-    name:     "Patricia Flores",
-    initials: "PF",
-    username: "pflores",
-    password: "agente2026",
-    role:     "agent",
-    title:    "Agente de Ventas",
-  },
+
 ];
 
 /* ── Login result ── */
