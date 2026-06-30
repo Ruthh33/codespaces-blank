@@ -1,0 +1,10 @@
+
+> @figma/my-make-file@0.0.1 dev
+> vite
+
+
+  VITE v6.3.5  ready in 387 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+11:40:31 PM [vite] (client) hmr update /src/app/components/team/TeamTable.tsx, /src/styles/index.css
