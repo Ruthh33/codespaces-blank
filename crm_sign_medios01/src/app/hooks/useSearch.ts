@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 
 interface UseSearchOptions<T> {
   data: T[];
-  searchKeys: Array<keyof T>;
+  searchFields: Array<keyof T>;
   debounceMs?: number;
   onSearch?: (results: T[]) => void;
 }
@@ -13,7 +13,7 @@ interface UseSearchOptions<T> {
  */
 export function useSearch<T extends Record<string, any>>({
   data,
-  searchKeys,
+  searchFields,
   debounceMs = 300,
   onSearch,
 }: UseSearchOptions<T>) {
@@ -26,11 +26,11 @@ export function useSearch<T extends Record<string, any>>({
 
     const lowerQuery = query.toLowerCase();
     return data.filter((item) =>
-      searchKeys.some((field) =>
+      searchFields.some((field) =>
         String(item[field]).toLowerCase().includes(lowerQuery)
       )
     );
-  }, [data, query, searchKeys]);
+  }, [data, query, searchFields]);
 
   useEffect(() => {
     if (onSearch) {

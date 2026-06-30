@@ -19,7 +19,7 @@ export function DashboardPage() {
 
   const { query, setQuery, results: searchedAgents } = useSearch({
     data: agentsData,
-    searchKeys: ["name", "role"],
+    searchFields: ["name", "role"],
   });
 
   const filteredAgents = useMemo(() => {

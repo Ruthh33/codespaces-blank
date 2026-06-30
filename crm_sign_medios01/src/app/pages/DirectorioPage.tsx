@@ -34,7 +34,7 @@ export function DirectorioPage() {
   /* Search Hook */
   const { query, setQuery, results: filteredBySearch } = useSearch({
     data: contacts,
-    searchKeys: ["firstName", "lastName", "phoneNumber"],
+    searchFields: ["firstName", "lastName", "phoneNumber"],
   });
 
   /* Get unique phone numbers for filter */

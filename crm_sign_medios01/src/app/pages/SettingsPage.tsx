@@ -293,11 +293,20 @@ export function SettingsPage() {
                   </div>
                 )}
 
-                {/* Members list */}
+                {/* Gestión de Fichas (Original context restored) */}
                 <div className="mb-6">
                   <div className="mb-5">
-                    <h1 className="text-2xl font-bold text-slate-800">Gestión de Equipo</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">Gestión de Fichas</h1>
                     <p className="mt-1 text-sm text-slate-600">Administración completa de usuarios y equipos asignados</p>
+                  </div>
+                  <UserRecordManagement />
+                </div>
+
+                {/* Members list (Section added for full modularity, placed below) */}
+                <div className="mt-8 border-t border-slate-200 pt-8">
+                  <div className="mb-5">
+                    <h2 className="text-xl font-bold text-slate-800">Miembros del Equipo</h2>
+                    <p className="mt-1 text-sm text-slate-500">Listado de personal con acceso al sistema</p>
                   </div>
                   <div className="space-y-3">
                     {members.map((member) => (
@@ -310,15 +319,6 @@ export function SettingsPage() {
                       />
                     ))}
                   </div>
-                </div>
-
-                {/* User Records Section */}
-                <div className="mt-8 border-t border-slate-200 pt-8">
-                  <div className="mb-5">
-                    <h1 className="text-2xl font-bold text-slate-800">Gestión de Fichas</h1>
-                    <p className="mt-1 text-sm text-slate-600">Administración completa de fichas de usuario</p>
-                  </div>
-                  <UserRecordManagement />
                 </div>
 
               </div>
