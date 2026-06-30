@@ -1051,11 +1051,11 @@ Si algo falla:
 
 | Fase | Duración | Días | Riesgo | Estado |
 |------|----------|------|--------|--------|
-| 0 - Preparación | 1h 30m | 0.5 | Bajo | ⏳ |
-| 1 - Mock Data | 2h 30m | 1 | Bajo | ⏳ |
-| 2 - Utilidades | 4h 30m | 1.5 | Bajo-Medio | ⏳ |
-| 3 - Services | 8h 30m | 2 | Medio | ⏳ |
-| 4 - Hooks | 5h | 1 | Bajo | ⏳ |
+| 0 - Preparación | 1h 30m | 0.5 | Bajo | ✅ |
+| 1 - Mock Data | 2h 30m | 1 | Bajo | ✅ |
+| 2 - Utilidades | 4h 30m | 1.5 | Bajo-Medio | ✅ |
+| 3 - Services | 8h 30m | 2 | Medio | ✅ |
+| 4 - Hooks | 5h | 1 | Bajo | ✅ |
 | 5 - Componentes | 10h | 2-3 | Medio | ⏳ |
 | 6 - Páginas | 3h | 1 | Bajo | ⏳ |
 | 7 - Testing | 2h | 0.5 | Bajo | ⏳ |
