@@ -1,59 +1,49 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 
 interface UseSearchOptions<T> {
   data: T[];
-  searchFields: Array<keyof T>;
+  searchKeys: Array<keyof T>;
   debounceMs?: number;
   onSearch?: (results: T[]) => void;
 }
 
 /**
  * useSearch Hook
- * Búsqueda con debounce y filtrado de resultados
+ * Búsqueda y filtrado de resultados
  */
 export function useSearch<T extends Record<string, any>>({
   data,
-  searchFields,
+  searchKeys,
   debounceMs = 300,
   onSearch,
 }: UseSearchOptions<T>) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<T[]>(data);
 
-  const filterData = useCallback(
-    (searchQuery: string) => {
-      if (!searchQuery.trim()) {
-        return data;
-      }
+  const results = useMemo(() => {
+    if (!query.trim()) {
+      return data;
+    }
 
-      const lowerQuery = searchQuery.toLowerCase();
-      return data.filter((item) =>
-        searchFields.some((field) =>
-          String(item[field]).toLowerCase().includes(lowerQuery)
-        )
-      );
-    },
-    [data, searchFields]
-  );
+    const lowerQuery = query.toLowerCase();
+    return data.filter((item) =>
+      searchKeys.some((field) =>
+        String(item[field]).toLowerCase().includes(lowerQuery)
+      )
+    );
+  }, [data, query, searchKeys]);
 
   useEffect(() => {
-    const handler = setTimeout(() => {
-      const filteredResults = filterData(query);
-      setResults(filteredResults);
-      if (onSearch) {
-        onSearch(filteredResults);
-      }
-    }, debounceMs);
+    if (onSearch) {
+      const handler = setTimeout(() => {
+        onSearch(results);
+      }, debounceMs);
+      return () => clearTimeout(handler);
+    }
+  }, [results, debounceMs, onSearch]);
 
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [query, debounceMs, filterData, onSearch]);
-
-  const resetSearch = useCallback(() => {
+  const resetSearch = () => {
     setQuery('');
-    setResults(data);
-  }, [data]);
+  };
 
   return {
     query,

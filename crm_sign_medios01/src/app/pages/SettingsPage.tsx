@@ -1,396 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DashboardHeader } from "../components/dashboard/DashboardHeader";
 import { Sidebar } from "../components/dashboard/Sidebar";
 import { agentsData } from "../components/dashboard/agentsData";
-import JSZip from "jszip";
-import { panelConversations } from "../components/agent/agentPanelData";
 import { UserRecordManagement } from "../components/dashboard/UserRecordManagement";
 import {
   Download, MessageSquare, Users, HardDrive, CheckCircle2, Loader2,
-  Clock, FileJson, FileText, ShieldCheck, AlertCircle, SlidersHorizontal,
-  UserPlus, Mail, ChevronDown, Trash2, RefreshCw, Crown,
-  UserCog, Shield, Send, X, MoreVertical, BadgeCheck,
+  Clock, FileText, ShieldCheck, AlertCircle, SlidersHorizontal,
+  ChevronDown, Shield,
 } from "lucide-react";
-import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import * as Select from "@radix-ui/react-select";
 
-/* ══════════════════════════════════════════════════════
-   TYPES
-══════════════════════════════════════════════════════ */
-type BackupStatus = "idle" | "running" | "done" | "error";
-type BackupRecord = { label: string; time: string; type: "chats" | "contacts" | "full" };
+// UI Components
+import { StatCard, BackupCard, type BackupOperationStatus } from "../components/backup";
+import { MemberRow, InvitationRow, RoleBadge, roleConfig, type Invitation } from "../components/team";
 
-type Role = "Administrador" | "Supervisor" | "Agente";
-type MemberStatus = "activo" | "pendiente" | "suspendido";
-
-interface TeamMember {
-  id: string;
-  name: string;
-  email: string;
-  role: Role;
-  status: MemberStatus;
-  joinedAt: string;
-  initials: string;
-  avatarColor: string;
-}
-
-/* ══════════════════════════════════════════════════════
-   MOCK DATA
-══════════════════════════════════════════════════════ */
-const mockContacts = [
-  { id: "1", name: "María González",  phone: "+52 55 1234 5678", assignedTo: "Roberto Sánchez" },
-  { id: "2", name: "Juan Pérez",      phone: "+52 55 8765 4321", assignedTo: "Patricia Ruiz" },
-  { id: "3", name: "Ana Martínez",    phone: "+52 55 2468 1357", assignedTo: "Miguel Torres" },
-  { id: "4", name: "Carlos López",    phone: "+52 55 9876 5432", assignedTo: null },
-  { id: "5", name: "Laura Fernández", phone: "+52 55 3691 2580", assignedTo: "Sofía Vargas" },
-];
-
-const initialMembers: TeamMember[] = [
-  { id: "m1", name: "Supervisor SIGN", email: "supervisor@signmedios.com", role: "Administrador", status: "activo",    joinedAt: "01/01/2025", initials: "SS", avatarColor: "bg-blue-600" },
-  { id: "m2", name: "Carlos Mendoza",  email: "cmendoza@signmedios.com",   role: "Supervisor",   status: "activo",    joinedAt: "15/02/2025", initials: "CM", avatarColor: "bg-emerald-600" },
-  { id: "m3", name: "María Torres",    email: "mtorres@signmedios.com",    role: "Agente",       status: "activo",    joinedAt: "10/03/2025", initials: "MT", avatarColor: "bg-purple-600" },
-  { id: "m4", name: "Andrés Vargas",   email: "avargas@signmedios.com",    role: "Agente",       status: "activo",    joinedAt: "22/03/2025", initials: "AV", avatarColor: "bg-amber-600" },
-  { id: "m5", name: "Gabriela Ruiz",   email: "gruiz@signmedios.com",      role: "Supervisor",   status: "activo",    joinedAt: "05/04/2025", initials: "GR", avatarColor: "bg-rose-600" },
-];
-
-/* ══════════════════════════════════════════════════════
-   HELPERS
-══════════════════════════════════════════════════════ */
-function downloadBlob(blob: Blob, filename: string) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
-function downloadCSV(rows: string[][], filename: string) {
-  const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
-  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-  downloadBlob(blob, filename);
-}
-function timestamp() {
-  return new Date().toLocaleString("es-VE", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
-}
-function chatTranscript(agentName: string, conversation: { clientName: string; topic: string; status: string; startTime: string; messages: { type: string; text: string; time: string; authorName?: string; authorInitials?: string; }[]; }) {
-  const header = [
-    `Agente: ${agentName}`,
-    `Cliente: ${conversation.clientName}`,
-    `Tema: ${conversation.topic}`,
-    `Estado: ${conversation.status}`,
-    `Inicio: ${conversation.startTime}`,
-    "",
-  ].join("\n");
-
-  const body = conversation.messages.map((msg, index) => {
-    const sender = msg.type === "whatsapp_out" ? "Agente" : msg.type === "whatsapp_in" ? "Cliente" : "Nota interna";
-    const author = msg.authorName ? ` (${msg.authorName})` : "";
-    const attachmentNote = (msg as any).attachment ? ` [Adjunto: ${(msg as any).attachment.name || "archivo"}]` : "";
-    return `${index + 1}. [${msg.time}] ${sender}${author}: ${msg.text}${attachmentNote}`;
-  }).join("\n");
-
-  return `${header}${body}`;
-}
-
-function decodeDataUrl(dataUrl: string): Uint8Array {
-  const [meta, data] = dataUrl.split(",");
-  const base64 = meta.includes("base64") ? data : encodeURIComponent(data);
-  const binary = atob(base64);
-  const array = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i += 1) array[i] = binary.charCodeAt(i);
-  return array;
-}
-
-async function attachmentToFile(attachment: any) {
-  const filename = attachment.name || "adjunto.bin";
-  if (typeof attachment.content === "string") {
-    return { path: filename, content: attachment.content };
-  }
-  if (typeof attachment.url === "string" && attachment.url.startsWith("data:")) {
-    return { path: filename, content: decodeDataUrl(attachment.url) };
-  }
-  if (typeof attachment.url === "string" && attachment.url.startsWith("http")) {
-    try {
-      const response = await fetch(attachment.url);
-      const blob = await response.blob();
-      return { path: filename, content: blob };
-    } catch {
-      return { path: `${filename}.txt`, content: `No se pudo descargar el adjunto desde ${attachment.url}` };
-    }
-  }
-  return { path: `${filename}.txt`, content: `Adjunto: ${attachment.name || "archivo"}` };
-}
-
-async function createZip(files: Array<{ path: string; content: string | Blob | ArrayBuffer | Uint8Array }>, filename: string) {
-  const zip = new JSZip();
-  files.forEach((file) => zip.file(file.path, file.content));
-  const blob = await zip.generateAsync({ type: "blob" });
-  downloadBlob(blob, filename);
-}
-
-async function simulate(setter: (s: BackupStatus) => void, fn: () => Promise<void> | void, onRecord: () => void) {
-  setter("running");
-  setTimeout(async () => {
-    try { await fn(); setter("done"); onRecord(); setTimeout(() => setter("idle"), 4000); }
-    catch { setter("error"); }
-  }, 1200);
-}
-
-/* ══════════════════════════════════════════════════════
-   ROLE CONFIG
-══════════════════════════════════════════════════════ */
-const roleConfig: Record<Role, { icon: React.ReactNode; color: string; bg: string; desc: string }> = {
-  "Administrador": {
-    icon: <Crown size={13} />,
-    color: "text-blue-700",
-    bg: "bg-blue-100",
-    desc: "Acceso total al sistema: usuarios, ajustes, respaldos y permisos.",
-  },
-  "Supervisor": {
-    icon: <UserCog size={13} />,
-    color: "text-emerald-700",
-    bg: "bg-emerald-100",
-    desc: "Puede ver todos los agentes, chats y gestionar fichas.",
-  },
-  "Agente": {
-    icon: <Shield size={13} />,
-    color: "text-amber-700",
-    bg: "bg-amber-100",
-    desc: "Accede solo a sus propias conversaciones y contactos asignados.",
-  },
-};
-
-const statusConfig: Record<MemberStatus, { label: string; cls: string; dot: string }> = {
-  activo:     { label: "Activo",     cls: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
-  pendiente:  { label: "Pendiente",  cls: "bg-amber-100 text-amber-700",     dot: "bg-amber-400" },
-  suspendido: { label: "Suspendido", cls: "bg-red-100 text-red-600",         dot: "bg-red-400" },
-};
-
-/* ══════════════════════════════════════════════════════
-   SUB-COMPONENTS — Backup
-══════════════════════════════════════════════════════ */
-function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string | number; color: string }) {
-  return (
-    <div className="flex items-center gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className={["rounded-xl p-3", color].join(" ")}>{icon}</div>
-      <div>
-        <p className="text-2xl font-bold text-slate-800">{value}</p>
-        <p className="text-sm text-slate-500">{label}</p>
-      </div>
-    </div>
-  );
-}
-
-function BackupCard({ icon, title, description, formats, status, onBackupZip, onBackupCSV, children }: {
-  icon: React.ReactNode; title: string; description: string;
-  formats: ("zip" | "csv")[]; status: BackupStatus;
-  onBackupZip?: () => void; onBackupCSV?: () => void;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <div className="flex items-start gap-3">
-        <div className="rounded-lg bg-blue-50 p-2.5 text-blue-600">{icon}</div>
-        <div className="flex-1">
-          <p className="font-semibold text-slate-800">{title}</p>
-          <p className="mt-0.5 text-sm text-slate-500">{description}</p>
-        </div>
-        {status === "done" && <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-500" />}
-      </div>
-      {children}
-      <div className="flex flex-wrap gap-2">
-        {formats.includes("zip") && onBackupZip && (
-          <button onClick={onBackupZip} disabled={status === "running"}
-            className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-blue-700 disabled:opacity-60">
-            {status === "running" ? <Loader2 size={15} className="animate-spin" /> : <Download size={15} />}
-            Descargar ZIP
-          </button>
-        )}
-        {formats.includes("csv") && onBackupCSV && (
-          <button onClick={onBackupCSV} disabled={status === "running"}
-            className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-all hover:bg-slate-50 disabled:opacity-60">
-            {status === "running" ? <Loader2 size={15} className="animate-spin" /> : <FileText size={15} />}
-            Descargar CSV
-          </button>
-        )}
-      </div>
-      {status === "done" && (
-        <p className="flex items-center gap-1.5 text-xs text-emerald-600">
-          <CheckCircle2 size={12} /> Respaldo generado correctamente
-        </p>
-      )}
-    </div>
-  );
-}
-
-/* ══════════════════════════════════════════════════════
-   SUB-COMPONENTS — Team
-══════════════════════════════════════════════════════ */
-
-/* Role badge */
-function RoleBadge({ role }: { role: Role }) {
-  const cfg = roleConfig[role];
-  return (
-    <span className={["inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium", cfg.bg, cfg.color].join(" ")}>
-      {cfg.icon}{role}
-    </span>
-  );
-}
-
-/* Status badge */
-function StatusBadge({ status }: { status: MemberStatus }) {
-  const cfg = statusConfig[status];
-  return (
-    <span className={["inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium", cfg.cls].join(" ")}>
-      <span className={["h-1.5 w-1.5 rounded-full", cfg.dot].join(" ")} />
-      {cfg.label}
-    </span>
-  );
-}
-
-/* Radix Select wrapper for role picker */
-function RoleSelect({ value, onChange }: { value: Role; onChange: (r: Role) => void }) {
-  const roles: Role[] = ["Administrador", "Supervisor", "Agente"];
-  return (
-    <Select.Root value={value} onValueChange={(v) => onChange(v as Role)}>
-      <Select.Trigger className="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200">
-        <Select.Value />
-        <Select.Icon><ChevronDown size={14} className="text-slate-400" /></Select.Icon>
-      </Select.Trigger>
-      <Select.Portal>
-        <Select.Content className="z-50 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
-          <Select.Viewport>
-            {roles.map((r) => (
-              <Select.Item key={r} value={r}
-                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100 focus:bg-slate-100">
-                <span className={["flex items-center gap-1", roleConfig[r].color].join(" ")}>
-                  {roleConfig[r].icon}
-                </span>
-                <Select.ItemText>{r}</Select.ItemText>
-              </Select.Item>
-            ))}
-          </Select.Viewport>
-        </Select.Content>
-      </Select.Portal>
-    </Select.Root>
-  );
-}
-
-/* Pending invitation row */
-interface Invitation { id: string; email: string; role: Role; sentAt: string }
-
-function InvitationRow({ inv, onRevoke }: { inv: Invitation; onRevoke: (id: string) => void }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
-        <Mail size={14} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="truncate text-sm font-medium text-slate-800">{inv.email}</p>
-        <p className="flex items-center gap-1 text-xs text-slate-500 mt-0.5">
-          <Clock size={10} /> Enviada: {inv.sentAt}
-        </p>
-      </div>
-      <RoleBadge role={inv.role} />
-      <button onClick={() => onRevoke(inv.id)}
-        className="ml-1 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500">
-        <X size={14} />
-      </button>
-    </div>
-  );
-}
-
-/* Member row */
-function MemberRow({ member, onChangeRole, onToggleSuspend, onRemove }: {
-  member: TeamMember;
-  onChangeRole: (id: string, role: Role) => void;
-  onToggleSuspend: (id: string) => void;
-  onRemove: (id: string) => void;
-}) {
-  const isCurrentUser = member.id === "m1";
-  return (
-    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm transition-shadow hover:shadow-md">
-      {/* Avatar */}
-      <div className={["flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white", member.avatarColor].join(" ")}>
-        {member.initials}
-      </div>
-
-      {/* Info */}
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <p className="truncate text-sm font-semibold text-slate-800">{member.name}</p>
-          {isCurrentUser && (
-            <span className="flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-700">
-              <BadgeCheck size={10} /> Tú
-            </span>
-          )}
-        </div>
-        <p className="truncate text-xs text-slate-500">{member.email}</p>
-        <p className="mt-0.5 text-[11px] text-slate-400">Desde {member.joinedAt}</p>
-      </div>
-
-      {/* Role */}
-      <div className="hidden sm:block">
-        <RoleBadge role={member.role} />
-      </div>
-
-      {/* Status */}
-      <StatusBadge status={member.status} />
-
-      {/* Actions */}
-      {!isCurrentUser && (
-        <DropdownMenu.Root>
-          <DropdownMenu.Trigger asChild>
-            <button className="rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700">
-              <MoreVertical size={16} />
-            </button>
-          </DropdownMenu.Trigger>
-          <DropdownMenu.Portal>
-            <DropdownMenu.Content
-              className="z-50 min-w-[200px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
-              sideOffset={5} align="end">
-              {/* Change role submenu */}
-              <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100">
-                  <UserCog size={14} /> Cambiar rol
-                  <ChevronDown size={12} className="ml-auto -rotate-90" />
-                </DropdownMenu.SubTrigger>
-                <DropdownMenu.Portal>
-                  <DropdownMenu.SubContent className="z-50 min-w-[180px] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg" sideOffset={4}>
-                    {(["Administrador","Supervisor","Agente"] as Role[]).map((r) => (
-                      <DropdownMenu.Item key={r}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100"
-                        onSelect={() => onChangeRole(member.id, r)}>
-                        <span className={roleConfig[r].color}>{roleConfig[r].icon}</span>
-                        {r}
-                        {member.role === r && <CheckCircle2 size={12} className="ml-auto text-blue-500" />}
-                      </DropdownMenu.Item>
-                    ))}
-                  </DropdownMenu.SubContent>
-                </DropdownMenu.Portal>
-              </DropdownMenu.Sub>
-
-              <DropdownMenu.Item
-                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100"
-                onSelect={() => onToggleSuspend(member.id)}>
-                <RefreshCw size={14} />
-                {member.status === "suspendido" ? "Reactivar acceso" : "Suspender acceso"}
-              </DropdownMenu.Item>
-
-              <DropdownMenu.Separator className="my-1.5 h-px bg-slate-200" />
-
-              <DropdownMenu.Item
-                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 outline-none hover:bg-red-50"
-                onSelect={() => onRemove(member.id)}>
-                <Trash2 size={14} /> Eliminar del equipo
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Portal>
-        </DropdownMenu.Root>
-      )}
-    </div>
-  );
-}
+// Services & Utils
+import { backupService } from "../services/domain/backupService";
+import { teamService } from "../services/domain/teamService";
+import { mockContacts } from "../mocks/contacts";
+import type { TeamMember, Role, BackupStatus } from "../types";
 
 /* ══════════════════════════════════════════════════════
    TABS
@@ -408,151 +36,74 @@ export function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("backup");
 
   /* ── backup state ── */
-  const [chatsStatus,    setChatsStatus]    = useState<BackupStatus>("idle");
-  const [contactsStatus, setContactsStatus] = useState<BackupStatus>("idle");
-  const [fullStatus,     setFullStatus]     = useState<BackupStatus>("idle");
+  const [chatsStatus,    setChatsStatus]    = useState<BackupOperationStatus>("idle");
+  const [contactsStatus, setContactsStatus] = useState<BackupOperationStatus>("idle");
+  const [fullStatus,     setFullStatus]     = useState<BackupOperationStatus>("idle");
   const [selectedAgent,  setSelectedAgent]  = useState<string>("todos");
-  const [history, setHistory] = useState<BackupRecord[]>([]);
+  const [history, setHistory] = useState<BackupStatus[]>([]);
 
   const totalChats = agentsData.reduce((a, ag) => a + ag.conversations.length, 0);
   const totalMsgs  = agentsData.reduce((a, ag) => a + ag.conversations.reduce((s, c) => s + c.messages.length, 0), 0);
 
-  const addRecord = (r: BackupRecord) => setHistory((h) => [r, ...h]);
+  useEffect(() => {
+    setHistory(backupService.getBackupHistory());
+  }, []);
 
-  const backupChatsZip = async () =>
-    simulate(setChatsStatus, async () => {
-      const zip = new JSZip();
+  const addRecord = (r: BackupStatus) => setHistory((h) => [r, ...h]);
 
-      // Filter conversations based on selected agent
-      const filteredConversations = selectedAgent === "todos" 
-        ? panelConversations 
-        : panelConversations; // In production, filter by agentId from backend
-
-      // Chats: export messages as plain text files and include attachments if present
-      for (const conv of filteredConversations) {
-        const folder = zip.folder(`${conv.clientName.replace(/[^a-z0-9]/gi, "_")}_${conv.id}`) as JSZip;
-        // messages.txt with plain text messages
-        const txtLines = conv.messages.map((m) => `[${m.time}] ${m.authorName ?? (m.type === 'whatsapp_out' ? 'Agent' : m.type === 'internal_note' ? 'Note' : 'Client')}: ${m.text}`).join("\n");
-        folder.file("messages.txt", txtLines);
-
-        // fetch attachments and add to folder
-        for (const m of conv.messages) {
-          if (m.attachment && m.attachment.url) {
-            try {
-              const res = await fetch(m.attachment.url);
-              const blob = await res.arrayBuffer();
-              const filename = m.attachment.name || `attachment_${m.id}`;
-              folder.file(filename, blob);
-            } catch (e) {
-              // ignore fetch errors but continue
-              console.warn("Failed to fetch attachment:", e);
-            }
-          }
-        }
-      }
-
-      const content = await zip.generateAsync({ type: "blob" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(content);
-      const agentLabel = selectedAgent === "todos" ? "todos_agentes" : selectedAgent;
-      a.download = `chats_signmedios_${agentLabel}_${Date.now()}.zip`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }, () => {
-      const label = selectedAgent === "todos" 
-        ? "Respaldo de chats - Todos los agentes (ZIP)" 
-        : `Respaldo de chats - ${agentsData.find(a => a.id === selectedAgent)?.name || "Agente"} (ZIP)`;
-      addRecord({ label, time: timestamp(), type: "chats" });
-    });
-
-  const backupContactsCSV = () =>
-    simulate(setContactsStatus, () => downloadCSV(
-      [["ID","Nombre","Teléfono","Asignado a"], ...mockContacts.map((c) => [c.id, c.name, c.phone, c.assignedTo ?? "Sin asignar"])],
-      `contactos_signmedios_${Date.now()}.csv`
-    ), () => addRecord({ label: "Respaldo de contactos (CSV)", time: timestamp(), type: "contacts" }));
-
-  const backupFullZip = async () =>
-    simulate(setFullStatus, async () => {
-      const zip = new JSZip();
-
-      // add chats (as folders per conversation)
-      for (const conv of panelConversations) {
-        const folder = zip.folder(`${conv.clientName.replace(/[^a-z0-9]/gi, "_")}_${conv.id}`) as JSZip;
-        const txtLines = conv.messages.map((m) => `[${m.time}] ${m.authorName ?? (m.type === 'whatsapp_out' ? 'Agent' : m.type === 'internal_note' ? 'Note' : 'Client')}: ${m.text}`).join("\n");
-        folder.file("messages.txt", txtLines);
-        for (const m of conv.messages) {
-          if (m.attachment && m.attachment.url) {
-            try {
-              const res = await fetch(m.attachment.url);
-              const blob = await res.arrayBuffer();
-              const filename = m.attachment.name || `attachment_${m.id}`;
-              folder.file(filename, blob);
-            } catch (e) { console.warn("Failed to fetch attachment:", e); }
-          }
-        }
-      }
-
-      // add contacts CSV
-      const csv = [["ID","Nombre","Teléfono","Asignado a"], ...mockContacts.map((c) => [c.id, c.name, c.phone, c.assignedTo ?? "Sin asignar"])].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
-      zip.file("contactos.csv", csv);
-
-      const content = await zip.generateAsync({ type: "blob" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(content);
-      a.download = `backup_completo_signmedios_${Date.now()}.zip`;
-      a.click();
-      URL.revokeObjectURL(a.href);
-    }, () => addRecord({ label: "Respaldo completo (ZIP)", time: timestamp(), type: "full" }));
-
-  /* ── team state ── */
-  const [members,     setMembers]     = useState<TeamMember[]>(initialMembers);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
-  const [invEmail,    setInvEmail]    = useState("");
-  const [invRole,     setInvRole]     = useState<Role>("Agente");
-  const [invSending,  setInvSending]  = useState(false);
-  const [invSuccess,  setInvSuccess]  = useState(false);
-  const [invError,    setInvError]    = useState("");
-
-  const handleSendInvite = () => {
-    const emailRx = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!invEmail.trim()) { setInvError("Ingresa un correo electrónico."); return; }
-    if (!emailRx.test(invEmail)) { setInvError("El correo no tiene un formato válido."); return; }
-    if (members.some((m) => m.email === invEmail) || invitations.some((i) => i.email === invEmail)) {
-      setInvError("Este correo ya está registrado o tiene una invitación pendiente."); return;
+  const simulate = async (setter: (s: BackupOperationStatus) => void, action: () => Promise<BackupStatus>) => {
+    setter("running");
+    try {
+      const record = await action();
+      setter("done");
+      addRecord(record);
+      setTimeout(() => setter("idle"), 4000);
+    } catch (error) {
+      console.error(error);
+      setter("error");
     }
-    setInvError("");
-    setInvSending(true);
-    setTimeout(() => {
-      setInvitations((prev) => [
-        ...prev,
-        { id: String(Date.now()), email: invEmail, role: invRole, sentAt: timestamp() },
-      ]);
-      setInvEmail("");
-      setInvSending(false);
-      setInvSuccess(true);
-      setTimeout(() => setInvSuccess(false), 3500);
-    }, 1400);
   };
 
-  const handleRevokeInvite = (id: string) =>
+  const backupChatsZip = () => simulate(setChatsStatus, () => backupService.generateChatsZip(selectedAgent));
+  const backupContactsCSV = () => simulate(setContactsStatus, async () => backupService.generateContactsCSV());
+  const backupFullZip = () => simulate(setFullStatus, () => backupService.generateFullBackup());
+
+  /* ── team state ── */
+  const [members,     setMembers]     = useState<TeamMember[]>([]);
+  const [invitations, setInvitations] = useState<Invitation[]>([]);
+
+  useEffect(() => {
+    setMembers(teamService.getTeamMembers());
+    // Note: in a real app invitations would also be fetched
+  }, []);
+
+  const handleRevokeInvite = (id: string) => {
+    teamService.revokeInvite(id);
     setInvitations((prev) => prev.filter((i) => i.id !== id));
+  };
 
-  const handleChangeRole = (id: string, role: Role) =>
+  const handleChangeRole = (id: string, role: Role) => {
+    teamService.updateMemberRole(id, role);
     setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, role } : m)));
+  };
 
-  const handleToggleSuspend = (id: string) =>
+  const handleToggleSuspend = (id: string) => {
+    teamService.toggleMemberStatus(id);
     setMembers((prev) =>
       prev.map((m) =>
         m.id === id ? { ...m, status: m.status === "suspendido" ? "activo" : "suspendido" } : m
       )
     );
-
-  const handleRemove = (id: string) => {
-    if (confirm("¿Confirmas que deseas eliminar este miembro del equipo?"))
-      setMembers((prev) => prev.filter((m) => m.id !== id));
   };
 
-  const typeIcon = (t: BackupRecord["type"]) => ({
+  const handleRemove = (id: string) => {
+    if (confirm("¿Confirmas que deseas eliminar este miembro del equipo?")) {
+      teamService.removeMember(id);
+      setMembers((prev) => prev.filter((m) => m.id !== id));
+    }
+  };
+
+  const typeIcon = (t: BackupStatus["type"]) => ({
     chats:    <MessageSquare size={13} className="text-blue-500" />,
     contacts: <Users         size={13} className="text-emerald-500" />,
     full:     <HardDrive     size={13} className="text-purple-500" />,
@@ -630,7 +181,7 @@ export function SettingsPage() {
                           <Select.Content className="z-50 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
                             <Select.Viewport>
                               <Select.Item value="todos"
-                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100 focus:bg-slate-100">
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100 focus:bg-slate-100 focus:bg-slate-100">
                                 <Select.ItemText>
                                   <span className="font-medium">Todos los agentes</span>
                                   <span className="ml-2 text-xs text-slate-500">({totalChats} conversaciones)</span>
@@ -729,8 +280,6 @@ export function SettingsPage() {
               {/* ── Left col: members + invitations ── */}
               <div className="flex flex-col gap-5 lg:col-span-2">
 
-                {/* Invite form removed per request */}
-
                 {/* Pending invitations */}
                 {invitations.length > 0 && (
                   <div className="flex flex-col gap-2">
@@ -745,11 +294,29 @@ export function SettingsPage() {
                 )}
 
                 {/* Members list */}
-                {/* Gestión de Fichas (copiada desde UserManagementPage) */}
                 <div className="mb-6">
                   <div className="mb-5">
-                    <h1 className="text-2xl font-bold text-slate-800">Gestión de Fichas</h1>
+                    <h1 className="text-2xl font-bold text-slate-800">Gestión de Equipo</h1>
                     <p className="mt-1 text-sm text-slate-600">Administración completa de usuarios y equipos asignados</p>
+                  </div>
+                  <div className="space-y-3">
+                    {members.map((member) => (
+                      <MemberRow
+                        key={member.id}
+                        member={member}
+                        onChangeRole={handleChangeRole}
+                        onToggleSuspend={handleToggleSuspend}
+                        onRemove={handleRemove}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* User Records Section */}
+                <div className="mt-8 border-t border-slate-200 pt-8">
+                  <div className="mb-5">
+                    <h1 className="text-2xl font-bold text-slate-800">Gestión de Fichas</h1>
+                    <p className="mt-1 text-sm text-slate-600">Administración completa de fichas de usuario</p>
                   </div>
                   <UserRecordManagement />
                 </div>

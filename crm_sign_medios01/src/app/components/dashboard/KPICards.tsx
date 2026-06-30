@@ -1,4 +1,4 @@
-import { Ticket, UserCheck, UserX, AlertCircle, TrendingUp, Users } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 
 interface KPICardProps {
   icon: React.ReactNode;
@@ -8,7 +8,7 @@ interface KPICardProps {
   color: "blue" | "emerald" | "amber" | "slate" | "gray";
 }
 
-function KPICard({ icon, label, value, trend, color }: KPICardProps) {
+export function KPICard({ icon, label, value, trend, color }: KPICardProps) {
   const colorClasses = {
     blue: "bg-blue-50 text-blue-600",
     emerald: "bg-emerald-50 text-emerald-600",
@@ -36,38 +36,5 @@ function KPICard({ icon, label, value, trend, color }: KPICardProps) {
   );
 }
 
-export function KPICards() {
-  // Datos base
-  const totalAgentes = 24;
-  const agentesConectados = 18;
-  const agentesDesconectados = totalAgentes - agentesConectados;
-
-  return (
-    <div className="mb-5 grid grid-cols-4 gap-4">
-      <KPICard
-        icon={<Users size={20} />}
-        label="Total de Agentes"
-        value={totalAgentes}
-        color="blue"
-      />
-      <KPICard
-        icon={<UserCheck size={20} />}
-        label="Agentes Conectados"
-        value={agentesConectados}
-        color="emerald"
-      />
-      <KPICard
-        icon={<UserX size={20} />}
-        label="Agentes Desconectados"
-        value={agentesDesconectados}
-        color="gray"
-      />
-      <KPICard
-        icon={<AlertCircle size={20} />}
-        label="Reasignaciones Pendientes"
-        value={8}
-        color="amber"
-      />
-    </div>
-  );
-}
+// In the new architecture, we might want a dynamic KPICards that takes data as props
+// but for now let's just make it exportable and usable.

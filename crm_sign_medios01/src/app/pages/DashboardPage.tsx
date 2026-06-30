@@ -1,31 +1,36 @@
-import { useState } from "react";
-import { Users, UserCheck, Search } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Users, UserCheck, Search, UserX } from "lucide-react";
 import { DashboardHeader } from "../components/dashboard/DashboardHeader";
 import { Sidebar } from "../components/dashboard/Sidebar";
 import { AgentCard } from "../components/dashboard/AgentCard";
 import { AgentChatTree } from "../components/dashboard/AgentChatTree";
 import { agentsData } from "../components/dashboard/agentsData";
+import { KPICard } from "../components/dashboard/KPICards";
+import { useSearch } from "../hooks/useSearch";
 import type { Agent } from "../components/dashboard/AgentCard";
 
 export function DashboardPage() {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "online" | "offline">("all");
 
   const totalAgents = agentsData.length;
   const onlineAgents = agentsData.filter((a) => a.online).length;
   const offlineAgents = totalAgents - onlineAgents;
 
-  const filteredAgents = agentsData.filter((agent) => {
-    const matchesSearch =
-      agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      agent.role.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "online" && agent.online) ||
-      (statusFilter === "offline" && !agent.online);
-    return matchesSearch && matchesStatus;
+  const { query, setQuery, results: searchedAgents } = useSearch({
+    data: agentsData,
+    searchKeys: ["name", "role"],
   });
+
+  const filteredAgents = useMemo(() => {
+    return searchedAgents.filter((agent) => {
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "online" && agent.online) ||
+        (statusFilter === "offline" && !agent.online);
+      return matchesStatus;
+    });
+  }, [searchedAgents, statusFilter]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
@@ -37,47 +42,24 @@ export function DashboardPage() {
         <main className="flex-1 overflow-y-auto px-6 py-5">
           {/* KPI Cards */}
           <div className="mb-5 grid gap-4 sm:grid-cols-3">
-            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-blue-50 p-3 text-blue-600">
-                  <Users size={22} />
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-slate-800">{totalAgents}</div>
-                  <div className="text-sm text-slate-500">Total de Agentes</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-emerald-50 p-3 text-emerald-600">
-                  <UserCheck size={22} />
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-slate-800">{onlineAgents}</div>
-                  <div className="flex items-center gap-1.5 text-sm text-emerald-600">
-                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    Agentes Conectados
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-gray-50 p-3 text-gray-600">
-                  <Users size={22} />
-                </div>
-                <div>
-                  <div className="text-3xl font-bold text-slate-800">{offlineAgents}</div>
-                  <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                    <span className="h-2 w-2 rounded-full bg-gray-400" />
-                    Agentes Desconectados
-                  </div>
-                </div>
-              </div>
-            </div>
+            <KPICard
+              icon={<Users size={22} />}
+              label="Total de Agentes"
+              value={totalAgents}
+              color="blue"
+            />
+            <KPICard
+              icon={<UserCheck size={22} />}
+              label="Agentes Conectados"
+              value={onlineAgents}
+              color="emerald"
+            />
+            <KPICard
+              icon={<UserX size={22} />}
+              label="Agentes Desconectados"
+              value={offlineAgents}
+              color="gray"
+            />
           </div>
 
           {/* Section title + filters */}
@@ -91,8 +73,8 @@ export function DashboardPage() {
                 <input
                   type="text"
                   placeholder="Buscar agente..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
                   className="h-8 rounded-lg border border-slate-200 bg-white pl-8 pr-3 text-xs text-slate-700 outline-none placeholder:text-slate-400 focus:border-blue-400 focus:ring-1 focus:ring-blue-200"
                 />
               </div>

@@ -16,41 +16,6 @@ export function useModal(initialState = false) {
     open,
     close,
     toggle,
-    setIsOpen,
-  };
-}
-
-/**
- * useMultipleModals Hook
- * Gestión de múltiples estados de modales en un solo objeto
- */
-export function useMultipleModals<T extends string>(modalNames: T[]) {
-  const [modals, setModals] = useState(
-    modalNames.reduce((acc, name) => {
-      acc[name] = false;
-      return acc;
-    }, {} as Record<T, boolean>)
-  );
-
-  const open = useCallback((name: T) => {
-    setModals((prev) => ({ ...prev, [name]: true }));
-  }, []);
-
-  const close = useCallback((name: T) => {
-    setModals((prev) => ({ ...prev, [name]: false }));
-  }, []);
-
-  const toggle = useCallback((name: T) => {
-    setModals((prev) => ({ ...prev, [name]: !prev[name] }));
-  }, []);
-
-  const isAnyOpen = Object.values(modals).some(Boolean);
-
-  return {
-    modals,
-    open,
-    close,
-    toggle,
-    isAnyOpen,
+    onOpenChange: setIsOpen,
   };
 }
