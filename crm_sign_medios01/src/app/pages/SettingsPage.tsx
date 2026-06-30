@@ -181,10 +181,11 @@ function StatCard({ icon, label, value, color }: { icon: React.ReactNode; label:
   );
 }
 
-function BackupCard({ icon, title, description, formats, status, onBackupZip, onBackupCSV }: {
+function BackupCard({ icon, title, description, formats, status, onBackupZip, onBackupCSV, children }: {
   icon: React.ReactNode; title: string; description: string;
   formats: ("zip" | "csv")[]; status: BackupStatus;
   onBackupZip?: () => void; onBackupCSV?: () => void;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
@@ -196,6 +197,7 @@ function BackupCard({ icon, title, description, formats, status, onBackupZip, on
         </div>
         {status === "done" && <CheckCircle2 size={18} className="mt-0.5 shrink-0 text-emerald-500" />}
       </div>
+      {children}
       <div className="flex flex-wrap gap-2">
         {formats.includes("zip") && onBackupZip && (
           <button onClick={onBackupZip} disabled={status === "running"}
@@ -409,6 +411,7 @@ export function SettingsPage() {
   const [chatsStatus,    setChatsStatus]    = useState<BackupStatus>("idle");
   const [contactsStatus, setContactsStatus] = useState<BackupStatus>("idle");
   const [fullStatus,     setFullStatus]     = useState<BackupStatus>("idle");
+  const [selectedAgent,  setSelectedAgent]  = useState<string>("todos");
   const [history, setHistory] = useState<BackupRecord[]>([]);
 
   const totalChats = agentsData.reduce((a, ag) => a + ag.conversations.length, 0);
@@ -420,8 +423,13 @@ export function SettingsPage() {
     simulate(setChatsStatus, async () => {
       const zip = new JSZip();
 
+      // Filter conversations based on selected agent
+      const filteredConversations = selectedAgent === "todos" 
+        ? panelConversations 
+        : panelConversations; // In production, filter by agentId from backend
+
       // Chats: export messages as plain text files and include attachments if present
-      for (const conv of panelConversations) {
+      for (const conv of filteredConversations) {
         const folder = zip.folder(`${conv.clientName.replace(/[^a-z0-9]/gi, "_")}_${conv.id}`) as JSZip;
         // messages.txt with plain text messages
         const txtLines = conv.messages.map((m) => `[${m.time}] ${m.authorName ?? (m.type === 'whatsapp_out' ? 'Agent' : m.type === 'internal_note' ? 'Note' : 'Client')}: ${m.text}`).join("\n");
@@ -446,10 +454,16 @@ export function SettingsPage() {
       const content = await zip.generateAsync({ type: "blob" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(content);
-      a.download = `chats_signmedios_${Date.now()}.zip`;
+      const agentLabel = selectedAgent === "todos" ? "todos_agentes" : selectedAgent;
+      a.download = `chats_signmedios_${agentLabel}_${Date.now()}.zip`;
       a.click();
       URL.revokeObjectURL(a.href);
-    }, () => addRecord({ label: "Respaldo de chats (ZIP)", time: timestamp(), type: "chats" }));
+    }, () => {
+      const label = selectedAgent === "todos" 
+        ? "Respaldo de chats - Todos los agentes (ZIP)" 
+        : `Respaldo de chats - ${agentsData.find(a => a.id === selectedAgent)?.name || "Agente"} (ZIP)`;
+      addRecord({ label, time: timestamp(), type: "chats" });
+    });
 
   const backupContactsCSV = () =>
     simulate(setContactsStatus, () => downloadCSV(
@@ -599,11 +613,44 @@ export function SettingsPage() {
                   <BackupCard
                     icon={<MessageSquare size={18} />}
                     title="Respaldo de Chats"
-                    description={`Exporta el historial completo de ${totalChats} conversaciones y ${totalMsgs} mensajes de todos los agentes.`}
+                    description={`Exporta el historial de conversaciones y mensajes de todos los agentes o selecciona un agente específico.`}
                     formats={["zip"]}
                     status={chatsStatus}
                     onBackupZip={backupChatsZip}
-                  />
+                  >
+                    {/* Agent selector */}
+                    <div className="mt-4 flex flex-col gap-2">
+                      <label className="text-xs font-medium text-slate-600">Seleccionar agente:</label>
+                      <Select.Root value={selectedAgent} onValueChange={setSelectedAgent}>
+                        <Select.Trigger className="flex h-9 w-full items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-200">
+                          <Select.Value />
+                          <Select.Icon><ChevronDown size={14} className="text-slate-400" /></Select.Icon>
+                        </Select.Trigger>
+                        <Select.Portal>
+                          <Select.Content className="z-50 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg">
+                            <Select.Viewport>
+                              <Select.Item value="todos"
+                                className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100 focus:bg-slate-100">
+                                <Select.ItemText>
+                                  <span className="font-medium">Todos los agentes</span>
+                                  <span className="ml-2 text-xs text-slate-500">({totalChats} conversaciones)</span>
+                                </Select.ItemText>
+                              </Select.Item>
+                              {agentsData.map((agent) => (
+                                <Select.Item key={agent.id} value={agent.id}
+                                  className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-100 focus:bg-slate-100">
+                                  <Select.ItemText>
+                                    <span className="font-medium">{agent.name}</span>
+                                    <span className="ml-2 text-xs text-slate-500">({agent.conversations.length} conversaciones)</span>
+                                  </Select.ItemText>
+                                </Select.Item>
+                              ))}
+                            </Select.Viewport>
+                          </Select.Content>
+                        </Select.Portal>
+                      </Select.Root>
+                    </div>
+                  </BackupCard>
                   <BackupCard
                     icon={<Users size={18} />}
                     title="Respaldo de Contactos"

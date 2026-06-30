@@ -46,9 +46,14 @@ export function UserRecordForm({ initialData, onSubmit, onCancel }: UserRecordFo
   const [photoPreview, setPhotoPreview] = useState<string | undefined>(initialData?.photo);
 
   const validate = (): boolean => {
-    // Validation removed per request — allow empty fields
-    setErrors({});
-    return true;
+    const newErrors: FormErrors = {};
+
+    if (formData.username.trim() && !/^[a-zA-Z0-9]+$/.test(formData.username.trim())) {
+      newErrors.username = "El nombre de usuario solo puede contener caracteres alfanuméricos";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
