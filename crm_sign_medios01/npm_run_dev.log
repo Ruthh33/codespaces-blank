@@ -1,0 +1,16 @@
+
+> @figma/my-make-file@0.0.1 dev
+> vite
+
+9:51:13 PM [vite] (client) Re-optimizing dependencies because vite config has changed
+
+  VITE v6.3.5  ready in 470 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
+9:55:17 PM [vite] (client) hmr update /src/app/pages/DashboardPage.tsx, /src/styles/index.css, /src/app/pages/DirectorioPage.tsx
+9:56:02 PM [vite] (client) hmr update /src/app/pages/DirectorioPage.tsx, /src/styles/index.css
+10:25:38 PM [vite] (client) hmr update /src/app/pages/SettingsPage.tsx, /src/styles/index.css
+10:31:40 PM [vite] (client) hmr update /src/app/pages/DashboardPage.tsx, /src/styles/index.css, /src/app/pages/DirectorioPage.tsx
+10:32:18 PM [vite] (client) hmr update /src/app/pages/DashboardPage.tsx, /src/styles/index.css
+10:32:28 PM [vite] (client) hmr update /src/app/pages/DirectorioPage.tsx, /src/styles/index.css

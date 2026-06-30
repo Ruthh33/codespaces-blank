@@ -1,17 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChatSidebar } from "../components/agent/ChatSidebar";
 import { ChatView } from "../components/agent/ChatView";
-import { panelConversations } from "../components/agent/agentPanelData";
+import { chatService } from "../services/domain/chatService";
 import type { PanelConversation, PanelMessage } from "../components/agent/agentPanelData";
 
 export function AgentPanelPage() {
-  const [selectedId, setSelectedId] = useState<string | null>(panelConversations[0]?.id ?? null);
-
-  const [localMessages, setLocalMessages] = useState<Record<string, PanelMessage[]>>(
-    () => Object.fromEntries(panelConversations.map((c) => [c.id, c.messages]))
-  );
-
+  const [conversations, setConversations] = useState<PanelConversation[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [localMessages, setLocalMessages] = useState<Record<string, PanelMessage[]>>({});
   const [readIds, setReadIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const fetchedConvs = chatService.getConversations();
+    setConversations(fetchedConvs);
+    if (fetchedConvs.length > 0) {
+      setSelectedId(fetchedConvs[0].id);
+    }
+
+    const initialMessages = Object.fromEntries(fetchedConvs.map((c) => [c.id, c.messages]));
+    setLocalMessages(initialMessages);
+  }, []);
 
   const handleSelect = (id: string) => {
     setSelectedId(id);
@@ -22,7 +30,7 @@ export function AgentPanelPage() {
     setLocalMessages((prev) => ({ ...prev, [convId]: msgs }));
   };
 
-  const conversations: PanelConversation[] = panelConversations.map((c) => ({
+  const processedConversations: PanelConversation[] = conversations.map((c) => ({
     ...c,
     unreadCount: readIds.has(c.id) ? 0 : c.unreadCount,
     lastMessage:
@@ -31,12 +39,12 @@ export function AgentPanelPage() {
         : c.lastMessage,
   }));
 
-  const selectedConv = conversations.find((c) => c.id === selectedId) ?? null;
+  const selectedConv = processedConversations.find((c) => c.id === selectedId) ?? null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       <ChatSidebar
-        conversations={conversations}
+        conversations={processedConversations}
         selectedId={selectedId}
         onSelect={handleSelect}
       />
